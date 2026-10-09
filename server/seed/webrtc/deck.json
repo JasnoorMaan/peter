@@ -1,0 +1,73 @@
+{
+  "id": "webrtc",
+  "title": "One room, two voices",
+  "summary": "How the browser and the voice agent share a LiveKit room, and why every presentation gets a new one.",
+  "slides": [
+    {
+      "number": 1,
+      "title": "A room is created fresh",
+      "keyPoints": [
+        "A new room every session",
+        "The token dispatches the agent",
+        "Only the deck id is attached"
+      ],
+      "notes": "Each presentation creates a new LiveKit room. The name starts with deck, then the deck id, then eight characters from a random id. The browser is not joining a standing meeting. The session token does two jobs: it admits the viewer, and it asks LiveKit to dispatch the agent into that new room. Dispatch happens when the room is created. A later token for a room that already exists would let someone in and would not start an agent. Ending the session and starting again, even on the same deck, has to mint a new room. The token carries the deck id only.",
+      "image": "/slides/webrtc/slide-1.png"
+    },
+    {
+      "number": 2,
+      "title": "The mic is a track",
+      "keyPoints": [
+        "The browser publishes audio",
+        "LiveKit carries the bytes",
+        "The API never hears them"
+      ],
+      "notes": "The browser publishes the microphone into the room as a WebRTC audio track. LiveKit Cloud carries the media. The API never sees the audio bytes. The agent subscribes, and Gemini Live hears that track. The spoken reply returns as the agent's own audio track, which the browser plays. On localhost the browser allows the microphone over plain HTTP, so this demo does not need a certificate. Echo cancellation is on by default. Laptop speakers can still leak into the mic, and the agent will treat its own voice as an interruption. Headphones are the reliable way to stop that loop.",
+      "image": "/slides/webrtc/slide-2.png"
+    },
+    {
+      "number": 3,
+      "title": "The agent joins the room",
+      "keyPoints": [
+        "A separate Node process",
+        "Metadata is the deck id",
+        "It fetches the deck itself"
+      ],
+      "notes": "The agent is another participant in the room, not code inside the page. A Node process registered as slide-presenter waits for LiveKit to dispatch it. The dispatch metadata is a small JSON object whose only field is the deck id. The agent loads that deck from the API. It does not accept slide contents from the browser. After it connects, it keeps the current slide number in its own memory and starts on slide one. If that process restarts, the number is gone. The browser cannot restore it, because the browser is not allowed to own the slide number.",
+      "image": "/slides/webrtc/slide-3.png"
+    },
+    {
+      "number": 4,
+      "title": "RPC beside the audio",
+      "keyPoints": [
+        "showSlide waits for ok",
+        "Registered before the agent calls",
+        "Arrows report the new number"
+      ],
+      "notes": "A slide change is neither audio nor a database write. LiveKit RPC is a call from one participant to another that waits for a reply. The browser registers showSlide the moment the room connects, earlier than the agent can call it. The agent sends the slide number. The browser draws that image and returns ok. The acknowledgement is why this is a call and not a one-way message. The other direction matters too. An arrow click updates the picture on the browser, then calls userChangedSlide on the agent so the stored number stays correct. Audio and these calls share the room and nothing else.",
+      "image": "/slides/webrtc/slide-4.png"
+    },
+    {
+      "number": 5,
+      "title": "Why the room name changes",
+      "keyPoints": [
+        "Dispatch runs once per room",
+        "A new name starts a new agent",
+        "Reload drops the slide"
+      ],
+      "notes": "The room name changes because dispatch runs once, when the room is created, not because the deck is different. A second token for an existing room does not start a second agent. A new name is the straightforward way to get a new agent. The deck id stays in the name so a log is readable, and a short random ending keeps two viewers of the same deck apart. The viewer identity is random as well. Nothing in this design reconnects a person to a room they already left. Reloading the page mid-session loses the slide the browser was showing. The agent, if it is still in the old room, is not attached to the new page.",
+      "image": "/slides/webrtc/slide-5.png"
+    },
+    {
+      "number": 6,
+      "title": "Use headphones",
+      "keyPoints": [
+        "Speakers leak into the mic",
+        "The agent hears itself and stops",
+        "Echo cancellation is not enough"
+      ],
+      "notes": "Headphones fix a failure that sounds like a model bug. The agent's voice is playing while the microphone is open. From speakers, some of that voice enters the mic. Gemini Live hears speech and cuts itself off. Turn-taking looks broken, and the cause is a loop. The browser's echo cancellation removes much of a normal speaker, and this page leaves that cancellation on. It does not catch everything from a laptop speaker nearby. A headset breaks the acoustic loop. The useful test is one full run with headphones and one without, before changing the model or the prompt.",
+      "image": "/slides/webrtc/slide-6.png"
+    }
+  ]
+}

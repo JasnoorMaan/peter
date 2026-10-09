@@ -1,0 +1,73 @@
+{
+  "id": "sqlite",
+  "title": "SQLite for a small app",
+  "summary": "Why this server keeps each deck as one SQLite row, and why the slide pictures stay on disk.",
+  "slides": [
+    {
+      "number": 1,
+      "title": "The database is a file",
+      "keyPoints": [
+        "One file on disk",
+        "No database server",
+        "Ordinary SQL"
+      ],
+      "notes": "SQLite stores the whole database in one file. There is no database server, no port, and no account. The API process opens the file, runs ordinary SQL, and closes it when the call is done. Here that file is decks.sqlite inside DATA_DIR. This fits the app: a few decks, one writer, and rows that are always saved and loaded whole. If the file is missing, the first open creates it and creates the decks table. Copying the data directory copies every deck row. The slide pictures are not inside that file.",
+      "image": "/slides/sqlite/slide-1.png"
+    },
+    {
+      "number": 2,
+      "title": "When SQLite fits",
+      "keyPoints": [
+        "One process writes",
+        "The deck is the unit",
+        "The data set stays small"
+      ],
+      "notes": "SQLite fits when one process does the writing and the data stays small. The API is the only writer in this program. The agent never opens the database. It imports the schema so it can check a deck it fetched from the API over HTTP. Nobody edits a single slide, and nobody searches across decks. A separate database server would be another service to run for a table of a few rows. The usual SQLite limit still applies: many writers at once will lock the file. This demo does not have that load, so the limit does not bite.",
+      "image": "/slides/sqlite/slide-2.png"
+    },
+    {
+      "number": 3,
+      "title": "One row per deck",
+      "keyPoints": [
+        "id, title, and source",
+        "slides_json holds the deck",
+        "created_at is text"
+      ],
+      "notes": "Each deck is one row. The primary key is the id: the seed folder name, or the first twelve characters of an upload's SHA-256. The title is also its own column so a list can show it, and it matches the title inside the JSON. Source is the word seed or the word upload. The slides_json column holds the entire deck, including the summary and every slide. created_at is an ISO timestamp stored as text. Seeding inserts a row only when that id is absent. Running seed again does not overwrite a deck that is already stored.",
+      "image": "/slides/sqlite/slide-3.png"
+    },
+    {
+      "number": 4,
+      "title": "Whole document reads",
+      "keyPoints": [
+        "Always read the whole deck",
+        "Always write the whole deck",
+        "No slides table"
+      ],
+      "notes": "A deck is always read whole and always written whole. Listing decks and fetching one deck both parse slides_json and check it against the schema. There is no slides table and no query that returns a single slide from SQL. A slide table would start to matter if a person edited one slide or searched across decks. Six short slides are a small document. One column means a save is a single insert and a read cannot come back with a slide missing. The schema still refuses a deck with more than six slides or fewer than one.",
+      "image": "/slides/sqlite/slide-4.png"
+    },
+    {
+      "number": 5,
+      "title": "Images stay on disk",
+      "keyPoints": [
+        "PNG files, not blobs",
+        "slides, then deck id, then file",
+        "The row stores the URL path"
+      ],
+      "notes": "Pictures stay out of the database. A slide's image field is a URL path like /slides/sqlite/slide-1.png. The PNG lives under DATA_DIR, then slides, then the deck id, as slide-1.png and so on. Seeding copies a picture from the seed folder only when that destination is missing, so a second run does not replace a file already on disk. The API serves that folder as static files. Leaving pixels out of the row keeps the JSON as text and keeps a database backup small. Showing a slide never writes to SQLite.",
+      "image": "/slides/sqlite/slide-5.png"
+    },
+    {
+      "number": 6,
+      "title": "Open it inside a function",
+      "keyPoints": [
+        "Not opened at import",
+        "The agent imports the schema only",
+        "DATA_DIR decides the path"
+      ],
+      "notes": "The connection opens inside the function that needs it, not when the module file is loaded. That split is deliberate. The agent imports this module for the schema alone, and importing it must not create a database file. Loading the module reads no environment variable and touches no path. The first storage call reads DATA_DIR, creates the directory, opens decks.sqlite, and creates the table if needed. It closes the connection before it returns. Locally DATA_DIR is a relative path, resolved from the process working directory. In Docker it is an absolute path.",
+      "image": "/slides/sqlite/slide-6.png"
+    }
+  ]
+}

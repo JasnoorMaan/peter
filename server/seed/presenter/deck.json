@@ -1,0 +1,73 @@
+{
+  "id": "presenter",
+  "title": "Presenting slides by voice",
+  "summary": "A voice agent walks one person through a short deck, jumps to the slide a question is about, and stops talking when interrupted.",
+  "slides": [
+    {
+      "number": 1,
+      "title": "One person, one deck",
+      "keyPoints": [
+        "One listener in the room",
+        "At most six slides",
+        "Notes, not a script"
+      ],
+      "notes": "This session is a presentation for one person. It is not a webinar and not a chat window. The deck has at most six slides, and the agent starts on the first without waiting to be asked. Each slide carries notes: facts and talking points, about sixty to one hundred and twenty words. Those notes are not a script. The agent phrases them live, in three or four spoken sentences, which is why it can continue cleanly after someone talks over it. The opening job is to explain the slide on screen, then move on.",
+      "image": "/slides/presenter/slide-1.png"
+    },
+    {
+      "number": 2,
+      "title": "Three owners",
+      "keyPoints": [
+        "The agent owns the slide number",
+        "The browser only renders",
+        "The API stores the deck"
+      ],
+      "notes": "Three parts of the program own three different things. The agent is the only part that changes the current slide number while it is speaking. The browser draws the slide it is told to draw, captures the microphone, and plays the agent's voice. The API stores each deck and serves the slide images. During a conversation the database is not consulted. A slide change goes from the model, to a tool on the agent, to the browser, and back as an acknowledgement. The exception is an arrow click. The browser moves the picture itself, then tells the agent the new number so the two sides still agree.",
+      "image": "/slides/presenter/slide-2.png"
+    },
+    {
+      "number": 3,
+      "title": "Speech in, speech out",
+      "keyPoints": [
+        "One Gemini Live model",
+        "It listens and it speaks",
+        "Voice activity stops it"
+      ],
+      "notes": "One model listens and talks. Gemini Live takes the microphone audio and returns speech, so there is no separate recognizer and no separate voice engine in this demo. That is why a reply can start quickly, and why a single Gemini API key covers the whole voice loop. The same model detects when a person starts speaking and stops its own audio. The application did not write that interruption logic. The cost of the shortcut is control. You cannot swap the recognizer or the voice without leaving this model. On laptop speakers the agent can hear itself and stop. Headphones prevent that.",
+      "image": "/slides/presenter/slide-3.png"
+    },
+    {
+      "number": 4,
+      "title": "The slide jump",
+      "keyPoints": [
+        "Call go_to_slide first",
+        "The browser gets showSlide",
+        "Speak only after ok"
+      ],
+      "notes": "If a question is about a slide that is not showing, the agent moves there before it answers. It calls a tool named go_to_slide with the slide number. The tool rejects numbers this deck does not have. For a valid number it sends a LiveKit remote call named showSlide to the viewer, and the payload is the number. The browser draws that slide and replies ok. Only then does the agent treat the slide as current and let the answer start. The API is not on this path. If the person says this slide or here, the agent looks up the number it already stored instead of guessing.",
+      "image": "/slides/presenter/slide-4.png"
+    },
+    {
+      "number": 5,
+      "title": "What this demo costs",
+      "keyPoints": [
+        "LiveKit Build plan is free",
+        "One Gemini key for voice",
+        "Uploads are the scarce quota"
+      ],
+      "notes": "This demo has no seat price and sends no invoice. LiveKit Cloud on the free Build plan carries the audio between the browser and the agent. Voice uses one Gemini API key. The live model's free tier shows unlimited requests, so rehearsing the talk does not spend a metered speech quota. The scarce quota is upload. Describing a new deck with Gemini 3.8 Flash is about twenty requests a day, and the fallback, Gemini 3.5 Flash Lite, is about five hundred. A file uploaded before is recognized by its hash and returned with no new model call. The decks that ship with the repo never call a model.",
+      "image": "/slides/presenter/slide-5.png"
+    },
+    {
+      "number": 6,
+      "title": "After the last slide",
+      "keyPoints": [
+        "Invite questions",
+        "Offer to resume",
+        "Admit what is not covered"
+      ],
+      "notes": "When the last slide is done, the agent stops advancing and invites questions. If the person interrupts, it leaves the presentation, answers, and then asks whether to continue from the slide it left. It does not jump back by itself. A question the deck does not cover gets one honest sentence, and the agent does not invent facts or prices. Asking for a slide this deck does not have does not crash and does not change the screen. The tool answers with the real range. Starting another deck mints a new room. A reused room would not dispatch the agent again.",
+      "image": "/slides/presenter/slide-6.png"
+    }
+  ]
+}
